@@ -1,0 +1,237 @@
+{
+  "source": "https://vc.kkch.net/vaclist.htm",
+  "fetched_at": "2025-09-18T21:20:43.887052",
+  "currency": "JPY",
+  "items": [
+    {
+      "name": "DPT三種混合◎",
+      "price_jpy": 4500,
+      "normalized_key": null
+    },
+    {
+      "name": "DPT-IPV-Hib五種混合◎",
+      "price_jpy": 21000,
+      "normalized_key": "hib"
+    },
+    {
+      "name": "Hib(ヘモフィルスインフルエンザ菌b)◎",
+      "price_jpy": 8700,
+      "normalized_key": "flu"
+    },
+    {
+      "name": "小児用 肺炎球菌結合型20価(PCV20、プレベナー20(R))　◎",
+      "price_jpy": 12100,
+      "normalized_key": "pcv13"
+    },
+    {
+      "name": "肺炎球菌結合型１５価(PCV１５、バクニュバンス(R))　◎",
+      "price_jpy": 12100,
+      "normalized_key": "pcv13"
+    },
+    {
+      "name": "DT二種混合◎",
+      "price_jpy": 5200,
+      "normalized_key": null
+    },
+    {
+      "name": "ＢＣＧ◎",
+      "price_jpy": 105002,
+      "normalized_key": null
+    },
+    {
+      "name": "ツベルクリン反応　◎",
+      "price_jpy": 3800,
+      "normalized_key": null
+    },
+    {
+      "name": "ポリオ(不活化、IPV)　◎",
+      "price_jpy": 9500,
+      "normalized_key": null
+    },
+    {
+      "name": "日本脳炎　◎ジェービック(R)エンセバック(R)（いずれか一方を在庫）",
+      "price_jpy": 6700,
+      "normalized_key": "jenv"
+    },
+    {
+      "name": "子宮頸癌(HPV4)ガーダシル(R)　◎",
+      "price_jpy": 16200,
+      "normalized_key": "hpv"
+    },
+    {
+      "name": "子宮頸癌(HPV9)シルガード９(R)　◎",
+      "price_jpy": 27500,
+      "normalized_key": "hpv"
+    },
+    {
+      "name": "新型コロナ(COVID-19)ファイザー　コミナティ(R) ※",
+      "price_jpy": 17800,
+      "normalized_key": "covid19"
+    },
+    {
+      "name": "新型コロナ(COVID-19)モデルナ　スパイクバックス(R) ※",
+      "price_jpy": 17800,
+      "normalized_key": "covid19"
+    },
+    {
+      "name": "麻疹（はしか）　×　生ワクチン",
+      "price_jpy": 6000,
+      "normalized_key": "mr"
+    },
+    {
+      "name": "風疹（三日はしか）　◎　生ワクチン",
+      "price_jpy": 6000,
+      "normalized_key": "mr"
+    },
+    {
+      "name": "ＭＲ（麻疹＋風疹）　○　生ワクチン",
+      "price_jpy": 9000,
+      "normalized_key": "mr"
+    },
+    {
+      "name": "おたふくかぜ　（ムンプス、流行性耳下腺炎）○　生ワクチン",
+      "price_jpy": 6000,
+      "normalized_key": "mumps"
+    },
+    {
+      "name": "水痘（みずぼうそう）◎　生ワクチン",
+      "price_jpy": 7500,
+      "normalized_key": "varicella"
+    },
+    {
+      "name": "帯状疱疹シングリックス(R)◎",
+      "price_jpy": 2100010800,
+      "normalized_key": "shingrix"
+    },
+    {
+      "name": "インフルエンザ　◎",
+      "price_jpy": 49004000,
+      "normalized_key": "flu"
+    },
+    {
+      "name": "肺炎球菌（PPV、大人用）◎",
+      "price_jpy": 80004000,
+      "normalized_key": null
+    },
+    {
+      "name": "Ａ型肝炎　◎",
+      "price_jpy": 7700,
+      "normalized_key": null
+    },
+    {
+      "name": "Ｂ型肝炎　◎",
+      "price_jpy": 5500,
+      "normalized_key": null
+    },
+    {
+      "name": "破傷風　×",
+      "price_jpy": 4500,
+      "normalized_key": "tetanus_booster"
+    },
+    {
+      "name": "狂犬病ラビピュール暴露前接種　◎暴露後接種　◎(かまれた後は健康保険可能）",
+      "price_jpy": 15500,
+      "normalized_key": "rabies"
+    },
+    {
+      "name": "狂犬病ベロラボ暴露前接種　◎暴露後接種　◎（健康保険は使えません）",
+      "price_jpy": 11000,
+      "normalized_key": "rabies"
+    },
+    {
+      "name": "ロタ (ロタリックス)　◎",
+      "price_jpy": 14500,
+      "normalized_key": "rota"
+    },
+    {
+      "name": "ロタ (ロタテック)　◎",
+      "price_jpy": 9700,
+      "normalized_key": "rota"
+    },
+    {
+      "name": "マラリア予防薬△メファキン(R)◎ビブラマイシン(R)◎マラロン(R)×小児用マラロン",
+      "price_jpy": 87025490170,
+      "normalized_key": null
+    },
+    {
+      "name": "高山病予防薬◎ダイアモックス(R) 250mg",
+      "price_jpy": 24,
+      "normalized_key": null
+    },
+    {
+      "name": "A型肝炎 Avaxim(R)◎",
+      "price_jpy": 12300,
+      "normalized_key": "hepA"
+    },
+    {
+      "name": "腸チフスTypbar TCV(R)◎",
+      "price_jpy": 10000,
+      "normalized_key": null
+    },
+    {
+      "name": "腸チフスTyphim Vi(R)◎",
+      "price_jpy": 1000010000,
+      "normalized_key": null
+    },
+    {
+      "name": "Ａ型肝炎＋B型肝炎Twinrix(R)◎",
+      "price_jpy": 14000,
+      "normalized_key": "hepB"
+    },
+    {
+      "name": "髄膜炎菌 (MCV4)Nimenrix(R)◎",
+      "price_jpy": 15000,
+      "normalized_key": "meningo"
+    },
+    {
+      "name": "髄膜炎菌 ACYW (MCV4)メンクワッドフィ(R)◎",
+      "price_jpy": 23300,
+      "normalized_key": "meningo"
+    },
+    {
+      "name": "髄膜炎菌　Ｂ群 (MCV-B)Ｂｅｘｓｅｒｏ(R)○",
+      "price_jpy": 27500,
+      "normalized_key": "meningo"
+    },
+    {
+      "name": "Tdap (青年用破傷風・ジフテリア・百日咳）Boostrix(R)◎",
+      "price_jpy": 10000,
+      "normalized_key": "tetanus_booster"
+    },
+    {
+      "name": "MMR (麻疹・風疹・おたふくかぜ３種混合）　◎　生ワクチン",
+      "price_jpy": 10000,
+      "normalized_key": "mr"
+    },
+    {
+      "name": "ダニ脳炎タイコバック(R)",
+      "price_jpy": 15000,
+      "normalized_key": null
+    },
+    {
+      "name": "黄熱YF-VAX(R)◎　生ワクチン",
+      "price_jpy": 23300,
+      "normalized_key": null
+    },
+    {
+      "name": "RSウイルスアボリスボ(R)○",
+      "price_jpy": 35000,
+      "normalized_key": null
+    },
+    {
+      "name": "RSウイルスアレックスビー(R)※",
+      "price_jpy": 30000,
+      "normalized_key": null
+    },
+    {
+      "name": "γグロブリン",
+      "price_jpy": null,
+      "normalized_key": null
+    },
+    {
+      "name": "Ｂ型肝炎γグロブリン",
+      "price_jpy": null,
+      "normalized_key": null
+    }
+  ]
+}

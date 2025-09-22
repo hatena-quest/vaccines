@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ワクチン推奨アプリ（試作）</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #22c55e;
+      --accent-2: #06b6d4;
+      --danger: #ef4444;
+      --border: #1f2937;
+      --chip: #334155;
+      --chip-text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, "Noto Sans JP", Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1020, #0a0f1a 40%, #0f172a);
+      color: var(--text);
+    }
+    .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    header { margin-bottom: 20px; }
+    h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: .02em; }
+    .sub { color: var(--muted); font-size: 13px; }
+
+    .panel {
+      background: radial-gradient(1200px 600px at 0% -10%, rgba(34,197,94,0.06), transparent),
+                  radial-gradient(1200px 600px at 100% 110%, rgba(6,182,212,0.08), transparent),
+                  var(--panel);
+      border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+    .col-12 { grid-column: span 12; }
+    .col-8 { grid-column: span 8; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+
+    @media (max-width: 900px) {
+      .col-8, .col-6, .col-4, .col-3 { grid-column: span 12; }
+    }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin: 6px 0; }
+    select, input[type="date"], input[type="number"], input[type="text"], input[type="month"] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0b1324; color: var(--text); outline: none;
+    }
+
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      appearance: none; border: none; padding: 10px 14px; border-radius: 10px; cursor: pointer;
+      background: #1e293b; color: var(--text); border: 1px solid var(--border);
+      display: inline-flex; align-items: center; gap: 8px; font-weight: 600;
+      text-decoration: none;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #16a34a); }
+    .btn-secondary { background: linear-gradient(135deg, var(--accent-2), #0891b2); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 8px; background: var(--chip); color: var(--chip-text);
+      padding: 6px 10px; border-radius: 999px; font-size: 13px; border: 1px solid var(--border);
+    }
+
+    .note { color: #9ca3af; font-size: 12px; }
+    .warn { color: #fca5a5; }
+    .success { color: #86efac; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); background: #0b1324; color: #a5b4fc; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px dashed #1f2937; font-size: 14px; }
+    thead th { color: #cbd5e1; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    .priority-high { color: #fca5a5; }
+    .priority-med { color: #fde68a; }
+    .priority-low { color: #a7f3d0; }
+    .col-price { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ワクチン推奨アプリ（試作）</h1>
+      <div class="sub">年齢・接種歴・渡航先・曝露リスクを入力すると、参照ガイドラインに基づく推奨候補を表示します（ローカルで判定）。<br />
+        臨床判断を代替するものではありません。最終判断は医療専門職が行ってください。</div>
+      <!-- 通院日スケジューラとの連携リンクを削除しました -->
+    </header>
+
+    <section class="panel">
+      <div class="grid">
+        <div class="col-4">
+          <label for="dob">生年月日</label>
+          <input type="date" id="dob" />
+        </div>
+        <div class="col-3">
+          <label for="ageYears">年齢（年, 任意・未入力可）</label>
+          <input type="number" id="ageYears" min="0" step="1" placeholder="自動算出/任意入力" />
+          <div class="note" id="ageDisplay"></div>
+        </div>
+        <div class="col-5">
+          <label for="sex">性別（HPV目安の参考, 任意）</label>
+          <select id="sex">
+            <option value="unspecified">指定なし</option>
+            <option value="female">女性</option>
+            <option value="male">男性</option>
+          </select>
+        </div>
+
+        <div class="col-4">
+          <label for="destCountry">渡航先（国）</label>
+          <select id="destCountry">
+            <option value="JP">日本</option>
+            <option value="US">アメリカ合衆国</option>
+            <option value="CA">カナダ</option>
+            <option value="CN">中国</option>
+            <optgroup label="東南アジア">
+              <option value="TH">タイ</option>
+              <option value="VN">ベトナム</option>
+              <option value="ID">インドネシア</option>
+              <option value="PH">フィリピン</option>
+              <option value="MY">マレーシア</option>
+              <option value="SG">シンガポール</option>
+              <option value="MM">ミャンマー</option>
+              <option value="LA">ラオス</option>
+              <option value="KH">カンボジア</option>
+            </optgroup>
+            <optgroup label="ヨーロッパ">
+              <option value="UK">イギリス</option>
+              <option value="FR">フランス</option>
+              <option value="DE">ドイツ</option>
+              <option value="IT">イタリア</option>
+              <option value="ES">スペイン</option>
+              <option value="GR">ギリシャ</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="col-4" id="usStateWrap" style="display:none;">
+          <label for="destUSState">米国の州</label>
+          <select id="destUSState">
+            <option value="">（州を選択）</option>
+            <option value="AL">Alabama</option>
+            <option value="AK">Alaska</option>
+            <option value="AZ">Arizona</option>
+            <option value="AR">Arkansas</option>
+            <option value="CA">California</option>
+            <option value="CO">Colorado</option>
+            <option value="CT">Connecticut</option>
+            <option value="DE">Delaware</option>
+            <option value="DC">District of Columbia</option>
+            <option value="FL">Florida</option>
+            <option value="GA">Georgia</option>
+            <option value="HI">Hawaii</option>
+            <option value="ID">Idaho</option>
+            <option value="IL">Illinois</option>
+            <option value="IN">Indiana</option>
+            <option value="IA">Iowa</option>
+            <option value="KS">Kansas</option>
+            <option value="KY">Kentucky</option>
+            <option value="LA">Louisiana</option>
+            <option value="ME">Maine</option>
+            <option value="MD">Maryland</option>
+            <option value="MA">Massachusetts</option>
+            <option value="MI">Michigan</option>
+            <option value="MN">Minnesota</option>
+            <option value="MS">Mississippi</option>
+            <option value="MO">Missouri</option>
+            <option value="MT">Montana</option>
+            <option value="NE">Nebraska</option>
+            <option value="NV">Nevada</option>
+            <option value="NH">New Hampshire</option>
+            <option value="NJ">New Jersey</option>
+            <option value="NM">New Mexico</option>
+            <option value="NY">New York</option>
+            <option value="NC">North Carolina</option>
+            <option value="ND">North Dakota</option>
+            <option value="OH">Ohio</option>
+            <option value="OK">Oklahoma</option>
+            <option value="OR">Oregon</option>
+            <option value="PA">Pennsylvania</option>
+            <option value="RI">Rhode Island</option>
+            <option value="SC">South Carolina</option>
+            <option value="SD">South Dakota</option>
+            <option value="TN">Tennessee</option>
+            <option value="TX">Texas</option>
+            <option value="UT">Utah</option>
+            <option value="VT">Vermont</option>
+            <option value="VA">Virginia</option>
+            <option value="WA">Washington</option>
+            <option value="WV">West Virginia</option>
+            <option value="WI">Wisconsin</option>
+            <option value="WY">Wyoming</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <label for="tripStart">渡航開始日（任意）</label>
+          <input type="date" id="tripStart" />
+        </div>
+        <div class="col-4">
+          <label for="tripEnd">渡航終了日（任意）</label>
+          <input type="date" id="tripEnd" />
+        </div>
+
+        <div class="col-12"><div class="pill">曝露・背景リスク</div></div>
+        <div class="col-6">
+          <label><input type="checkbox" id="riskRural" /> 農村/長期滞在（>1か月）/フィールドワーク</label>
+          <label><input type="checkbox" id="riskAnimals" /> 動物曝露（犬・コウモリ等）リスクあり</label>
+        </div>
+        <div class="col-6">
+          <label><input type="checkbox" id="riskImmuno" /> 免疫抑制（生ワクチン回避）</label>
+          <label><input type="checkbox" id="riskPregnant" /> 妊娠中/妊娠予定（生ワクチン回避）</label>
+          <label><input type="checkbox" id="riskUSStudy" /> 米国で大学留学予定</label>
+          <label><input type="checkbox" id="riskDorm" /> 寮/集団生活（大学・寄宿舎等）</label>
+        </div>
+
+        <div class="col-12"><div class="pill">接種済み（完了済み扱い）</div></div>
+        <div class="col-12">
+          <div class="chips" id="completedWrap"></div>
+        </div>
+
+        <div class="col-4">
+          <label for="lastTd">最終 破傷風/ジフテリア（Td/Tdap）接種日（任意）</label>
+          <input type="date" id="lastTd" />
+        </div>
+        <div class="col-4">
+          <label for="lastFlu">最終 インフルエンザ接種日（任意）</label>
+          <input type="date" id="lastFlu" />
+        </div>
+        <div class="col-4">
+          <label for="lastCovid">最終 コロナワクチン接種日（任意）</label>
+          <input type="date" id="lastCovid" />
+        </div>
+
+        <div class="col-12" style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="evaluate">推奨ワクチンを判定</button>
+          <button class="btn" id="autoRoutine">定期接種を自動チェック</button>
+          <button class="btn btn-secondary" id="copyResults">結果をコピー</button>
+          <span class="note">判定はブラウザ内で実行され、外部送信はありません。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:18px;">
+      <div class="row" style="justify-content: space-between; align-items: baseline;">
+        <div>
+          <div class="sub">推奨候補（参考）</div>
+        </div>
+        <div id="summary" class="pill"></div>
+      </div>
+      <div class="row" style="gap:12px; margin:8px 0;">
+        <label class="note"><input type="checkbox" id="togglePrice" /> 価格を表示</label>
+        <label class="note">価格データ: <input type="file" id="priceFile" accept="application/json" /></label>
+        <span class="note" id="priceStatus"></span>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ワクチン</th>
+              <th>根拠/理由</th>
+              <th>優先度</th>
+              <th class="col-price">価格(目安)</th>
+              <th>注意</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:18px;">
+      <div class="row" style="justify-content: space-between; align-items: baseline;">
+        <div>
+          <div class="sub">訪問スケジュール（最小回数案・同日併用可）</div>
+        </div>
+        <div class="row">
+          <label class="note" for="schedStart">開始日</label>
+          <input type="date" id="schedStart" />
+          <label class="note"><input type="checkbox" id="compressSchedule" checked /> 圧縮（同日併用最大化）</label>
+          <button class="btn btn-primary" id="buildSchedule">スケジュール計算</button>
+          <button class="btn btn-secondary" id="visitExportIcs">ICSを保存</button>
+          <button class="btn" id="visitCopy">結果をコピー</button>
+        </div>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>日付</th>
+              <th>実施ワクチン</th>
+              <th>備考</th>
+              <th class="col-price">概算</th>
+            </tr>
+          </thead>
+          <tbody id="visitBody"></tbody>
+        </table>
+      </div>
+      <div id="scheduleSummary" class="note" style="margin-top:8px;"></div>
+    </section>
+
+    <section class="note" style="margin-top:14px; line-height:1.7;">
+      <div>注意・免責：</div>
+      <ul>
+        <li>本ツールは参照ガイドラインの要点を簡易化した判定を示すもので、臨床判断を代替しません。個別症例では禁忌や接種間隔、接種歴の確認が必要です。</li>
+        <li>生ワクチン（BCG、麻しん風しん、生水痘、生帯状疱疹、ロタ等）は、<span class="warn">妊娠中・重度の免疫抑制では禁忌</span>です。</li>
+        <li>最新の公的情報をご確認ください（日本の定期接種制度、CDC/ACIP推奨、各国の入国要件等）。</li>
+      </ul>
+      <div>参考：</div>
+      <ul>
+        <li><a href="https://www.mhlw.go.jp/" target="_blank" rel="noopener">厚生労働省 予防接種関連情報</a></li>
+        <li><a href="https://www.cdc.gov/vaccines/schedules/" target="_blank" rel="noopener">CDC Immunization Schedules</a></li>
+        <li><a href="https://wwwnc.cdc.gov/travel" target="_blank" rel="noopener">CDC Travelers' Health</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    // =============== ユーティリティ ===============
+    const fmt = {
+      ymd: (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const da = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${da}`;
+      },
+      ymdCompact: (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const da = String(d.getDate()).padStart(2, '0');
+        return `${y}${m}${da}`;
+      },
+      parseYmd: (s) => {
+        if (!s) return null;
+        const [y, m, d] = s.split('-').map(v => parseInt(v, 10));
+        return new Date(y, m - 1, d);
+      },
+      daysBetween: (a, b) => {
+        if (!a || !b) return 0;
+        const ms = (b - a) / (1000*60*60*24);
+        return Math.round(ms);
+      },
+      addDays: (d, n) => {
+        const t = new Date(d.getTime());
+        t.setDate(t.getDate() + n);
+        return t;
+      }
+    };
+
+    // =============== 価格データ ===============
+    let priceData = null; // { items: [ { name, price_jpy, normalized_key }, ... ] }
+    const priceMap = new Map(); // key -> price_jpy
+    function formatJPY(n) { return (n == null) ? '' : `${Number(n).toLocaleString('ja-JP')}円`; }
+    function coerceKeyFromName(name) {
+      if (!name) return null;
+      const pairs = [
+        [/インフル|ｲﾝﾌﾙ/i, 'flu'],
+        [/A型肝炎/i, 'hepA'],
+        [/B型肝炎/i, 'hepB'],
+        [/麻しん|麻疹|はしか|MR/i, 'mr'],
+        [/水痘|水ぼうそう|水疱瘡/i, 'varicella'],
+        [/おたふく|流行性耳下腺炎|ムンプス/i, 'mumps'],
+        [/髄膜炎菌/i, 'meningo'],
+        [/肺炎球菌.*成人|PPSV/i, 'ppsv23'],
+        [/肺炎球菌.*小児|PCV/i, 'pcv13'],
+        [/日本脳炎/i, 'jenv'],
+        [/ヒブ|Hib/i, 'hib'],
+        [/四種混合|DPT.*IPV|DPT-?IPV|DTaP/i, 'dtap_ipv'],
+        [/ロタ/i, 'rota'],
+        [/HPV/i, 'hpv'],
+        [/帯状疱疹.*シングリ|Shingrix/i, 'shingrix'],
+        [/帯状疱疹.*生/i, 'shingles_live'],
+        [/狂犬病/i, 'rabies'],
+        [/破傷風|Td|Tdap/i, 'tetanus_booster'],
+        [/コロナ|COVID|新型コロナ/i, 'covid19'],
+      ];
+      for (const [re, key] of pairs) {
+        if (re.test(name)) return key;
+      }
+      return null;
+    }
+    function rebuildPriceMap() {
+      priceMap.clear();
+      if (!priceData || !Array.isArray(priceData.items)) return;
+      for (const it of priceData.items) {
+        const key = it.normalized_key || coerceKeyFromName(it.name);
+        if (!key) continue;
+        if (typeof it.price_jpy === 'number') priceMap.set(key, it.price_jpy);
+      }
+    }
+    function getPriceForKey(key) { return priceMap.has(key) ? priceMap.get(key) : null; }
+    function updatePriceColumnsVisibility() {
+      const show = document.getElementById('togglePrice')?.checked && priceMap.size > 0;
+      document.querySelectorAll('.col-price').forEach(e => { e.style.display = show ? '' : 'none'; });
+    }
+
+    function calcAgeYears(dob) {
+      if (!dob) return null;
+      const today = new Date();
+      let years = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) years--;
+      return Math.max(0, years);
+    }
+    function calcAgeMonths(dob) {
+      if (!dob) return null;
+      const today = new Date();
+      let months = (today.getFullYear() - dob.getFullYear()) * 12 + (today.getMonth() - dob.getMonth());
+      if (today.getDate() < dob.getDate()) months--;
+      return Math.max(0, months);
+    }
+
+    // =============== 定義 ===============
+    const VACCINES = {
+      // 定期接種
+      hib: { name: 'ヒブ（Hib）', live: false, group: 'routine' },
+      pcv13: { name: '小児用肺炎球菌（PCV13）', live: false, group: 'routine' },
+      hepB: { name: 'B型肝炎', live: false, group: 'routine' },
+      dtap_ipv: { name: '四種混合（DPT-IPV）', live: false, group: 'routine' },
+      bcg: { name: 'BCG（結核）', live: true, group: 'routine' },
+      mr: { name: '麻しん風しん（MR）', live: true, group: 'routine' },
+      varicella: { name: '水痘（水ぼうそう）', live: true, group: 'routine' },
+      jenv: { name: '日本脳炎', live: false, group: 'routine' },
+      hpv: { name: 'HPV（ヒトパピローマウイルス）', live: false, group: 'routine' },
+      rota: { name: 'ロタウイルス', live: true, group: 'routine' },
+      penta: { name: '五種混合（DPT-IPV + Hib）', live: false, group: 'routine' },
+      // 任意接種
+      mumps: { name: '流行性耳下腺炎（おたふくかぜ）', live: true, group: 'optional' },
+      flu: { name: 'インフルエンザ（季節性）', live: false, group: 'optional' },
+      hepA: { name: 'A型肝炎', live: false, group: 'optional' },
+      meningo: { name: '髄膜炎菌（MCV4等）', live: false, group: 'optional' },
+      ppsv23: { name: '成人用肺炎球菌（PPSV23）', live: false, group: 'optional' },
+      rabies: { name: '狂犬病', live: false, group: 'optional' },
+      tetanus_booster: { name: '破傷風トキソイド（ブースター）', live: false, group: 'optional' },
+      shingles_live: { name: '帯状疱疹（生ワクチン）', live: true, group: 'optional' },
+      shingrix: { name: '帯状疱疹（シングリックス®）', live: false, group: 'optional' },
+      covid19: { name: 'コロナワクチン（mRNA等）', live: false, group: 'optional' },
+    };
+
+    const COMPLETABLE = Object.keys(VACCINES);
+
+    // =============== UI 構築（接種済み） ===============
+    const completedWrap = document.getElementById('completedWrap');
+    const completedInputs = new Map(); // key -> checkbox(シリーズ完了フラグ)
+    const doseInputs = new Map(); // key -> number input (接種済み回数)
+    (function buildCompleted() {
+      const frag = document.createDocumentFragment();
+      for (const key of COMPLETABLE) {
+        const label = document.createElement('label');
+        label.className = 'chip';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = key;
+        cb.id = `done-${key}`;
+        const span = document.createElement('span');
+        span.textContent = VACCINES[key].name + ' 済';
+        const dose = document.createElement('input');
+        dose.type = 'number'; dose.min = '0'; dose.step = '1'; dose.placeholder = '回数';
+        dose.id = `dose-${key}`; dose.style.width = '72px'; dose.title = '接種済み回数';
+        label.appendChild(cb);
+        label.appendChild(span);
+        label.appendChild(dose);
+        frag.appendChild(label);
+        completedInputs.set(key, cb);
+        doseInputs.set(key, dose);
+      }
+      completedWrap.appendChild(frag);
+    })();
+
+    // =============== 判定ロジック ===============
+    function evaluate() {
+      const dob = fmt.parseYmd(document.getElementById('dob').value);
+      let ageYears = document.getElementById('ageYears').value ? parseInt(document.getElementById('ageYears').value, 10) : null;
+      const ageYearsFromDob = calcAgeYears(dob);
+      if (!ageYears && ageYearsFromDob !== null) ageYears = ageYearsFromDob;
+      const ageMonths = calcAgeMonths(dob);
+      const sex = document.getElementById('sex').value;
+
+      // 渡航先（国→地域グループ正規化、米国は州も保持）
+      const destCountry = document.getElementById('destCountry').value;
+      const SEA = new Set(['TH','VN','ID','PH','MY','SG','MM','LA','KH']);
+      const EU = new Set(['UK','FR','DE','IT','ES','GR']);
+      let dest = destCountry;
+      if (SEA.has(destCountry)) dest = 'SEA';
+      else if (EU.has(destCountry)) dest = 'EU';
+      const tripStart = fmt.parseYmd(document.getElementById('tripStart').value);
+      const tripEnd = fmt.parseYmd(document.getElementById('tripEnd').value);
+      const tripDays = Math.max(0, fmt.daysBetween(tripStart, tripEnd));
+
+      const riskRural = document.getElementById('riskRural').checked;
+      const riskAnimals = document.getElementById('riskAnimals').checked;
+      const riskImmuno = document.getElementById('riskImmuno').checked;
+      const riskPregnant = document.getElementById('riskPregnant').checked;
+      const riskUSStudy = document.getElementById('riskUSStudy').checked;
+      const riskDorm = document.getElementById('riskDorm').checked;
+
+      // 接種済み回数（cbチェックはシリーズ完了として扱う）
+      const completed = new Set();
+      const countCompletedByKey = new Map();
+      for (const [key, cb] of completedInputs.entries()) {
+        const doseInp = doseInputs.get(key);
+        const doseVal = doseInp ? parseInt(doseInp.value, 10) : 0;
+        if (cb.checked) {
+          completed.add(key);
+          countCompletedByKey.set(key, Infinity);
+        } else {
+          countCompletedByKey.set(key, Number.isFinite(doseVal) && !isNaN(doseVal) ? Math.max(0, doseVal) : 0);
+        }
+      }
+      // 五種混合が済なら Hib/DPT-IPV も済扱い
+      if (completed.has('penta')) { countCompletedByKey.set('hib', Infinity); countCompletedByKey.set('dtap_ipv', Infinity); }
+
+      const lastTd = fmt.parseYmd(document.getElementById('lastTd').value);
+      const lastFlu = fmt.parseYmd(document.getElementById('lastFlu').value);
+      const lastCovid = fmt.parseYmd(document.getElementById('lastCovid').value);
+
+      const out = [];
+      const ctx = { ageYears, riskImmuno };
+      const remainingDoses = (key) => {
+        const required = (seriesFor(key, ctx) || [0]).length;
+        const done = countCompletedByKey.get(key) ?? 0;
+        if (done === Infinity) return 0;
+        return Math.max(0, required - done);
+      };
+      const add = (key, reason, priority, notes = '', caution = '') => {
+        const rem = remainingDoses(key);
+        if (rem <= 0) return;
+        const extra = (rem !== Infinity && rem > 0) ? (notes ? `${notes}／残${rem}回` : `残${rem}回`) : notes;
+        out.push({ key, name: VACCINES[key].name, reason, priority, notes: extra, caution });
+      };
+      const addEvenIfCompleted = (key, reason, priority, notes = '', caution = '') => {
+        out.push({ key, name: VACCINES[key].name, reason, priority, notes, caution });
+      };
+
+      // 1) 日本の定期接種（年齢ざっくり目安）
+      if (ageMonths !== null) {
+        if (ageMonths < 8 * 12) {
+          // 幼小児向け（簡略）
+          if (ageMonths < 8) add('rota', '日本の定期接種（乳児期）', 'high', '生後15週～8か月未満の範囲で検討');
+          if (ageMonths < 60) {
+            add('hib', '日本の定期接種（乳幼児）', 'high');
+            add('pcv13', '日本の定期接種（乳幼児）', 'high');
+            add('dtap_ipv', '日本の定期接種（乳幼児）', 'high');
+            add('bcg', '日本の定期接種（乳児期）', 'high');
+            add('hepB', '日本の定期接種（乳児期）', 'high');
+          }
+          if (ageMonths >= 12) {
+            add('mr', '日本の定期接種（1歳以降でMR1期）', 'high');
+            add('varicella', '日本の定期接種（1歳以降）', 'high');
+          }
+        }
+        // 学童期～思春期の一部
+        if (ageYears !== null && ageYears >= 3 && ageYears <= 12) {
+          add('jenv', '日本の定期接種（日本脳炎）', 'high');
+        }
+        // HPV
+        if (ageYears !== null && ageYears >= 12 && ageYears <= 26) {
+          add('hpv', '日本の定期接種（対象年齢・キャッチアップ含む）', 'high', sex === 'male' ? '男性も可（公費対象は自治体・年度に依存）' : '');
+        }
+      }
+
+      // 2) 任意接種（国内）
+      if (ageYears !== null) {
+        if (ageYears >= 1 && ageYears < 15) add('mumps', '国内での流行対策（任意接種）', 'med');
+        if (ageYears >= 65) add('ppsv23', '65歳以上の肺炎球菌ワクチン', 'med');
+        if (ageYears >= 50) add('shingrix', '50歳以上の帯状疱疹予防（推奨：シングリックス®2回）', 'med');
+      }
+
+      // 毎シーズン/定期的
+      const today = new Date();
+      const monthsSince = (last) => last ? Math.floor((today - last) / (1000*60*60*24*30.4)) : Infinity;
+      if (monthsSince(lastFlu) >= 9) {
+        addEvenIfCompleted('flu', '季節性（毎シーズン）', 'med', '今季未接種/前回から期間経過');
+      }
+      if (monthsSince(lastCovid) >= 6) {
+        addEvenIfCompleted('covid19', '追加接種（重症化リスク・流行期を考慮）', 'med');
+      }
+      if (monthsSince(lastTd) >= 120) {
+        addEvenIfCompleted('tetanus_booster', '10年ごとのブースター（Td/Tdap）', 'med');
+      }
+
+      // 3) 渡航先ベース
+      const longStay = tripDays >= 30 || riskRural;
+      if (dest === 'CN' || dest === 'SEA') {
+        add('hepA', '渡航先（中国/東南アジア）でのA型肝炎リスク', 'high');
+        if (longStay) add('jenv', '渡航先（中国/東南アジア）での日本脳炎（長期/農村）', 'high');
+        if (riskAnimals || longStay) add('rabies', '動物曝露/長期滞在での暴露前接種', 'med');
+        // B型肝炎（広域推奨）
+        add('hepB', '渡航先でのB型肝炎曝露リスク', 'med');
+      }
+      if (dest === 'EU') {
+        add('mr', 'ヨーロッパでの麻しん流行報告があるため未接種は要確認', 'high');
+        add('tetanus_booster', '外傷対策を含む一般的なブースター', 'low');
+        add('flu', '流行シーズンに応じて', 'low');
+        add('covid19', '流行状況に応じて', 'low');
+      }
+      if (dest === 'US' || dest === 'CA') {
+        add('mr', 'MMR未接種/不明は要確認（麻しん流行対策）', 'high');
+        add('varicella', '水痘既往/抗体不明の場合の確認', 'med');
+        add('tetanus_booster', '外傷対策を含む一般的なブースター', 'low');
+        add('flu', '流行シーズンに応じて', 'low');
+        add('covid19', '流行状況に応じて', 'low');
+        // 特定状況での髄膜炎菌（寮生活/留学等）
+        add('meningo', '寮生活/集団生活等では要検討', 'low');
+      }
+      // 米国 大学留学/寮生活 要件を想定（優先度引き上げ）
+      if (destCountry === 'US' && (riskUSStudy || riskDorm)) {
+        add('meningo', '米国 大学/寮生活 要件考慮', 'high');
+        add('mr', '米国 大学/寮生活 要件: MMR確認', 'high');
+        add('varicella', '米国 大学/寮生活 要件: 水痘確認', 'med');
+        add('hepB', '米国 大学/寮生活 でのB型肝炎対策', 'med');
+        addEvenIfCompleted('tetanus_booster', '米国 大学/寮生活: Td/Tdap更新', 'med');
+      }
+      if (dest === 'JP') {
+        // 国内のみ：ルーチン中心
+        add('flu', '季節性', 'low');
+        add('covid19', '流行状況に応じて', 'low');
+      }
+
+      // 4) 禁忌・注意（生ワクチン回避）
+      const liveContra = (key) => ['bcg','mr','varicella','rota','mumps','shingles_live'].includes(key);
+      const cautions = [];
+      if (riskImmuno || riskPregnant) {
+        for (const rec of out) {
+          if (liveContra(rec.key)) {
+            rec.caution = '生ワクチン回避（妊娠/免疫抑制）';
+          }
+        }
+        cautions.push('妊娠/免疫抑制では生ワクチン禁忌。シングリックス®（不活化）は可。');
+      }
+
+      // 5) 完了/重複整理と優先度ソート
+      const dedup = new Map();
+      for (const r of out) dedup.set(r.key, r); // 後勝ち
+      const arr = Array.from(dedup.values());
+      const pval = (p) => p === 'high' ? 0 : p === 'med' ? 1 : 2;
+      arr.sort((a,b) => pval(a.priority) - pval(b.priority));
+
+      // 6) 表示
+      const tbody = document.getElementById('resultBody');
+      tbody.innerHTML = '';
+      const showPrice = document.getElementById('togglePrice')?.checked && priceMap.size > 0;
+      updatePriceColumnsVisibility();
+      for (const r of arr) {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td'); tdName.textContent = r.name;
+        const tdReason = document.createElement('td'); tdReason.textContent = r.reason + (r.notes ? `（${r.notes}）` : '');
+        const tdPrio = document.createElement('td');
+        tdPrio.textContent = r.priority === 'high' ? '高' : r.priority === 'med' ? '中' : '低';
+        tdPrio.className = r.priority === 'high' ? 'priority-high' : r.priority === 'med' ? 'priority-med' : 'priority-low';
+        const tdPrice = document.createElement('td'); tdPrice.className = 'col-price';
+        if (showPrice) {
+          const p = getPriceForKey(r.key);
+          tdPrice.textContent = p != null ? formatJPY(p) : '';
+        }
+        const tdCau = document.createElement('td'); tdCau.innerHTML = r.caution ? `<span class="warn">${r.caution}</span>` : '';
+        tr.appendChild(tdName); tr.appendChild(tdReason); tr.appendChild(tdPrio); tr.appendChild(tdPrice); tr.appendChild(tdCau);
+        tbody.appendChild(tr);
+      }
+
+      const summary = document.getElementById('summary');
+      const ageStr = (ageYears !== null) ? `${ageYears}歳` : '年齢不明';
+      const cSel = document.getElementById('destCountry');
+      let destLabel = cSel.options[cSel.selectedIndex]?.textContent || dest;
+      if (destCountry === 'US') {
+        const stSel = document.getElementById('destUSState');
+        const stTxt = stSel && stSel.options[stSel.selectedIndex]?.textContent;
+        if (stTxt && stSel.value) destLabel = `${destLabel}（${stTxt}）`;
+      }
+      summary.textContent = `${ageStr} / 渡航先: ${destLabel} / 候補 ${arr.length}件`;
+
+      return { arr, cautions };
+    }
+
+    // =============== イベント ===============
+    document.getElementById('evaluate').addEventListener('click', evaluate);
+    // 年齢の自動表示
+    function updateAgeDisplay() {
+      const dob = fmt.parseYmd(document.getElementById('dob').value);
+      const y = calcAgeYears(dob);
+      const m = calcAgeMonths(dob);
+      const ageDisp = document.getElementById('ageDisplay');
+      if (y !== null && m !== null) {
+        ageDisp.textContent = `推定年齢: ${y}歳 ${m - y*12}か月`;
+        const ay = document.getElementById('ageYears');
+        if (!ay.value) ay.value = y;
+      } else {
+        ageDisp.textContent = '';
+      }
+    }
+    document.getElementById('dob').addEventListener('input', updateAgeDisplay);
+    document.getElementById('dob').addEventListener('change', updateAgeDisplay);
+    document.getElementById('ageYears').addEventListener('input', () => {
+      const val = document.getElementById('ageYears').value;
+      document.getElementById('ageDisplay').textContent = val ? `年齢入力: ${val}歳` : '';
+    });
+    // 米国州のUI切替
+    function updateDestUI() {
+      const wrap = document.getElementById('usStateWrap');
+      const c = document.getElementById('destCountry').value;
+      wrap.style.display = (c === 'US') ? '' : 'none';
+    }
+    document.getElementById('destCountry').addEventListener('change', updateDestUI);
+    updateDestUI();
+    // 定期接種の自動チェック（年齢基準の簡略）: 回数も自動入力し、満了時のみチェックON
+    document.getElementById('autoRoutine').addEventListener('click', () => {
+      const dob = fmt.parseYmd(document.getElementById('dob').value);
+      let ageM = calcAgeMonths(dob);
+      const ageY = calcAgeYears(dob);
+      if (ageM == null && ageY != null) ageM = ageY * 12;
+      if (ageM == null && ageY == null) return;
+
+      const riskImmuno = document.getElementById('riskImmuno').checked;
+      const ctx = { ageYears: ageY, riskImmuno };
+
+      function setDose(key, n) {
+        const inp = doseInputs.get(key);
+        if (inp) inp.value = String(Math.max(0, n));
+      }
+      function markIfComplete(key, n) {
+        const seriesLen = (seriesFor(key, ctx) || [0]).length;
+        const cb = completedInputs.get(key);
+        if (!cb) return;
+        cb.checked = (n >= seriesLen);
+      }
+      function expectedByAge(key) {
+        // 簡略ロジック（日本の定期接種の概ねの目安）
+        switch (key) {
+          case 'hib': {
+            if (ageM == null) return 0;
+            if (ageM >= 6) return 3; // 0,1,2ヶ月相当
+            if (ageM >= 4) return 2;
+            if (ageM >= 2) return 1;
+            return 0;
+          }
+          case 'pcv13': {
+            if (ageM == null) return 0;
+            if (ageM >= 6) return 2; // 簡略化のシリーズ長(2)に合わせる
+            if (ageM >= 2) return 1;
+            return 0;
+          }
+          case 'dtap_ipv': {
+            if (ageM == null) return 0;
+            if (ageM >= 12) return 4;
+            if (ageM >= 6) return 3;
+            if (ageM >= 4) return 2;
+            if (ageM >= 2) return 1;
+            return 0;
+          }
+          case 'bcg': {
+            if (ageM == null) return 0;
+            return (ageM >= 3) ? 1 : 0;
+          }
+          case 'hepB': {
+            if (ageM == null) return 0;
+            if (ageM >= 6) return 3;
+            if (ageM >= 1) return 2;
+            if (ageM >= 0) return 1;
+            return 0;
+          }
+          case 'rota': {
+            if (ageM == null) return 0;
+            if (ageM >= 4) return 2; // 簡略シリーズ(2)
+            if (ageM >= 2) return 1;
+            return 0;
+          }
+          case 'mr': {
+            if (ageY != null && ageY >= 6) return 2;
+            if (ageM != null && ageM >= 12) return 1;
+            return 0;
+          }
+          case 'varicella': {
+            if (ageY != null && ageY >= 4) return 2;
+            if (ageM != null && ageM >= 12) return 1;
+            return 0;
+          }
+          case 'jenv': {
+            if (ageY != null && ageY >= 4) return 2;
+            if (ageY != null && ageY >= 3) return 1;
+            return 0;
+          }
+          // HPV/成人任意等は本ボタンでは自動化しない
+          default:
+            return 0;
+        }
+      }
+
+      const routineKeys = ['hib','pcv13','dtap_ipv','bcg','hepB','rota','mr','varicella','jenv'];
+      for (const key of routineKeys) {
+        const exp = expectedByAge(key);
+        setDose(key, exp);
+        markIfComplete(key, exp);
+      }
+
+      // 五種混合の世代別対応は今後拡張（現状は個別ワクチンで反映）
+
+      // 反映結果を即時表示
+      evaluate();
+      buildSchedule();
+    });
+
+    document.getElementById('copyResults').addEventListener('click', () => {
+      const { arr } = evaluate();
+      const showPrice = document.getElementById('togglePrice')?.checked && priceMap.size > 0;
+      const header = showPrice ? ['ワクチン','理由','優先度','価格(目安)','注意'] : ['ワクチン','理由','優先度','注意'];
+      const rows = arr.map(r => {
+        const base = [r.name, r.reason, r.priority];
+        if (showPrice) {
+          const p = getPriceForKey(r.key);
+          base.push(p != null ? `${p}` : '');
+        }
+        base.push(r.caution || '');
+        return base;
+      });
+      const text = [header.join('\t'), ...rows.map(a => a.join('\t'))].join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyResults');
+        btn.textContent = 'コピーしました';
+        setTimeout(() => btn.textContent = '結果をコピー', 1500);
+      }).catch(() => alert('コピーに失敗しました。ブラウザの許可設定をご確認ください。'));
+    });
+
+    // 価格ファイルの読み込み
+    document.getElementById('priceFile')?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result));
+          if (!data || !Array.isArray(data.items)) throw new Error('items配列がありません');
+          priceData = data; rebuildPriceMap();
+          document.getElementById('priceStatus').textContent = `読み込み: ${priceMap.size}件`;
+          updatePriceColumnsVisibility();
+          evaluate();
+          buildSchedule();
+        } catch(err) {
+          document.getElementById('priceStatus').textContent = `読み込み失敗: ${err}`;
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    });
+    document.getElementById('togglePrice')?.addEventListener('change', () => {
+      updatePriceColumnsVisibility();
+      evaluate();
+      buildSchedule();
+    });
+
+    // =============== スケジュール（最小訪問回数・同時接種考慮） ===============
+    function isLiveParenteral(key) {
+      return ['bcg','mr','varicella','mumps','shingles_live'].includes(key);
+    }
+
+    function seriesFor(key, ctx) {
+      const y = ctx.ageYears ?? null;
+      const immuno = !!ctx.riskImmuno;
+      switch (key) {
+        case 'hpv':
+          if (y !== null && y <= 14 && !immuno) return [0, 180]; // 2回法（簡略）
+          return [0, 60, 180]; // 3回法（簡略）
+        case 'shingrix':
+          return [0, 60]; // 2か月後
+        case 'tetanus_booster':
+        case 'meningo':
+        case 'ppsv23':
+        case 'flu':
+        case 'covid19':
+        case 'bcg':
+          return [0];
+        case 'mr':
+        case 'varicella':
+          return [0, 28];
+        case 'hepA':
+          return [0, 180];
+        case 'hepB':
+          return [0, 28, 180]; // 0-1-6か月相当
+        case 'rabies':
+          return [0, 7]; // 暴露前 0,7日（簡略）
+        case 'jenv':
+          return [0, 28]; // 0,28日（簡略）
+        // 小児（簡略）
+        case 'hib':
+          return [0, 28, 56];
+        case 'pcv13':
+          return [0, 56];
+        case 'dtap_ipv':
+          return [0, 28, 56, 180];
+        case 'rota':
+          return [0, 56];
+        case 'mumps':
+          return [0];
+        default:
+          return [0];
+      }
+    }
+
+    function buildSchedule() {
+      const today = new Date();
+      const schedInput = document.getElementById('schedStart');
+      if (!schedInput.value) schedInput.value = fmt.ymd(today);
+      const start = fmt.parseYmd(schedInput.value) || today;
+      const compress = document.getElementById('compressSchedule') ? document.getElementById('compressSchedule').checked : true;
+      const evalRes = evaluate();
+      const arr = evalRes.arr; // 推奨ワクチン
+      // コンテキスト（年齢/免疫抑制）
+      const dob = fmt.parseYmd(document.getElementById('dob').value);
+      const ageYears = calcAgeYears(dob);
+      const riskImmuno = document.getElementById('riskImmuno').checked;
+      const ctx = { ageYears, riskImmuno };
+      // 接種済み回数の取得
+      const countCompletedByKey = new Map();
+      for (const [key, cb] of completedInputs.entries()) {
+        const doseInp = doseInputs.get(key);
+        const doseVal = doseInp ? parseInt(doseInp.value, 10) : 0;
+        if (cb.checked) countCompletedByKey.set(key, Infinity);
+        else countCompletedByKey.set(key, Number.isFinite(doseVal) && !isNaN(doseVal) ? Math.max(0, doseVal) : 0);
+      }
+      if ((completedInputs.get('penta')?.checked)) { countCompletedByKey.set('hib', Infinity); countCompletedByKey.set('dtap_ipv', Infinity); }
+
+      // タスク化（各ワクチンの接種回）
+      const events = [];
+      const doseCountByKey = new Map();
+      for (const r of arr) {
+        const key = r.key;
+        const offsets = seriesFor(key, ctx);
+        // 乳児期制限例：ロタは8か月以降はスキップ
+        if (key === 'rota' && ageYears !== null && ageYears >= 1) continue;
+        const done = countCompletedByKey.get(key) ?? 0;
+        const remainOffsets = (done === Infinity) ? [] : offsets.slice(done);
+        remainOffsets.forEach((off, i) => {
+          events.push({ key, name: VACCINES[key]?.name || key, offset: off, live: isLiveParenteral(key), doseIndex: (done + i + 1) });
+        });
+        doseCountByKey.set(key, remainOffsets.length);
+      }
+      // オフセット昇順
+      events.sort((a,b) => a.offset - b.offset || (a.live === b.live ? 0 : a.live ? -1 : 1));
+
+      // スケジューリング（同日併用、28日ルール）
+      const LIVE_GAP = 28;
+      const visitsMap = new Map(); // ymd -> { date: Date, items: [] }
+      const scheduledLiveDates = []; // {date: Date}
+      for (const ev of events) {
+        let date = fmt.addDays(start, ev.offset);
+        if (compress) {
+          if (ev.live) {
+            // 直近の生ワクチン日との間隔を確認（同日へ寄せる）
+            let adjusted = false;
+            for (let i = scheduledLiveDates.length - 1; i >= 0; i--) {
+              const d2 = scheduledLiveDates[i];
+              const diff = Math.abs(fmt.daysBetween(d2, date));
+              if (diff < LIVE_GAP) {
+                if (fmt.daysBetween(fmt.addDays(start, ev.offset), d2) >= 0) {
+                  date = d2; adjusted = true; break;
+                } else {
+                  date = fmt.addDays(d2, LIVE_GAP); adjusted = true; break;
+                }
+              }
+            }
+            if (!adjusted) scheduledLiveDates.push(date);
+          }
+          const ymd = fmt.ymd(date);
+          if (!visitsMap.has(ymd)) visitsMap.set(ymd, { date, items: [] });
+          visitsMap.get(ymd).items.push(ev);
+        } else {
+          // 圧縮しない: 1訪問1ワクチン、生ワクチンは28日間隔を確保
+          while (true) {
+            const ymdTry = fmt.ymd(date);
+            const occupied = visitsMap.has(ymdTry) && visitsMap.get(ymdTry).items.length > 0;
+            const liveGapOK = !ev.live || scheduledLiveDates.every(d2 => Math.abs(fmt.daysBetween(d2, date)) >= LIVE_GAP);
+            if (!occupied && liveGapOK) break;
+            date = fmt.addDays(date, 1);
+          }
+          const ymd = fmt.ymd(date);
+          if (!visitsMap.has(ymd)) visitsMap.set(ymd, { date, items: [] });
+          visitsMap.get(ymd).items.push(ev);
+          if (ev.live) scheduledLiveDates.push(date);
+        }
+      }
+
+      // 並べ替えと表示
+      const visits = Array.from(visitsMap.values()).sort((a,b) => a.date - b.date);
+      renderVisits(visits);
+      return visits;
+    }
+
+    function renderVisits(visits) {
+      const tbody = document.getElementById('visitBody');
+      tbody.innerHTML = '';
+      const showPrice = document.getElementById('togglePrice')?.checked && priceMap.size > 0;
+      updatePriceColumnsVisibility();
+      let total = 0;
+      let idx = 1;
+      for (const v of visits) {
+        const tr = document.createElement('tr');
+        const tdIdx = document.createElement('td'); tdIdx.textContent = String(idx++);
+        const tdDt = document.createElement('td'); tdDt.textContent = fmt.ymd(v.date);
+        const tdList = document.createElement('td');
+        const grouped = new Map();
+        for (const it of v.items) {
+          const g = grouped.get(it.key) || [];
+          g.push(it);
+          grouped.set(it.key, g);
+        }
+        const parts = [];
+        for (const [k, arr] of grouped.entries()) {
+          const name = VACCINES[k]?.name || k;
+          const doses = arr.map(e => `#${e.doseIndex}`).join(',');
+          parts.push(`${name}（${doses}）`);
+        }
+        tdList.textContent = parts.join(' / ');
+        const tdNote = document.createElement('td');
+        const hasLive = v.items.some(i => i.live);
+        tdNote.textContent = hasLive ? '生ワクチン含む（他の生ワクチンは同日接種）' : '';
+        const tdCost = document.createElement('td'); tdCost.className = 'col-price';
+        if (showPrice) {
+          const visitCost = v.items.reduce((sum, it) => {
+            const p = getPriceForKey(it.key);
+            return sum + (p || 0);
+          }, 0);
+          total += visitCost;
+          tdCost.textContent = visitCost ? formatJPY(visitCost) : '';
+        }
+        tr.appendChild(tdIdx); tr.appendChild(tdDt); tr.appendChild(tdList); tr.appendChild(tdNote); tr.appendChild(tdCost);
+        tbody.appendChild(tr);
+      }
+      const sumEl = document.getElementById('scheduleSummary');
+      if (sumEl) sumEl.textContent = showPrice ? `訪問 ${visits.length}回 / 概算合計: ${formatJPY(total)}` : `訪問 ${visits.length}回`;
+    }
+
+    function exportVisitsICS() {
+      const visits = buildSchedule();
+      const lines = [];
+      lines.push('BEGIN:VCALENDAR');
+      lines.push('VERSION:2.0');
+      lines.push('PRODID:-//Clinic//Vaccine Planner//JP');
+      visits.forEach((v, i) => {
+        const dt = fmt.ymdCompact(v.date);
+        const uid = `${dt}-VISIT-${i+1}@local`;
+        const list = v.items.map(it => VACCINES[it.key]?.name || it.key).join(' / ');
+        lines.push('BEGIN:VEVENT');
+        lines.push(`UID:${uid}`);
+        lines.push(`DTSTAMP:${fmt.ymdCompact(new Date())}T000000Z`);
+        lines.push(`DTSTART;VALUE=DATE:${dt}`);
+        const end = fmt.addDays(v.date, 1);
+        lines.push(`DTEND;VALUE=DATE:${fmt.ymdCompact(end)}`);
+        lines.push(`SUMMARY:予防接種 来院 ${i+1}回目`);
+        lines.push(`DESCRIPTION:${list}`);
+        lines.push('END:VEVENT');
+      });
+      lines.push('END:VCALENDAR');
+      const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `vaccination_schedule_${fmt.ymd(new Date())}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }
+
+    function copyVisits() {
+      const visits = buildSchedule();
+      const header = ['#','日付','実施ワクチン','備考'];
+      const rows = visits.map((v,i) => {
+        const names = v.items.map(it => `${VACCINES[it.key]?.name || it.key}#${it.doseIndex}`).join(' / ');
+        const note = v.items.some(it => it.live) ? '生ワクチン含む' : '';
+        return [i+1, fmt.ymd(v.date), names, note];
+      });
+      const text = [header.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('visitCopy');
+        btn.textContent = 'コピーしました';
+        setTimeout(() => btn.textContent = '結果をコピー', 1500);
+      }).catch(() => alert('コピーに失敗しました。ブラウザの許可設定をご確認ください。'));
+    }
+
+    document.getElementById('buildSchedule').addEventListener('click', buildSchedule);
+    document.getElementById('visitExportIcs').addEventListener('click', exportVisitsICS);
+    document.getElementById('visitCopy').addEventListener('click', copyVisits);
+
+    // 初期化: 価格カラムの可視状態を反映
+    updatePriceColumnsVisibility();
+    // 自動ロード: data/prices.json をHTTP/HTTPSで提供されている場合のみ試行
+    window.addEventListener('load', async () => {
+      try {
+        if (location.protocol.startsWith('http')) {
+          const res = await fetch('data/prices.json', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.items)) {
+              priceData = data; rebuildPriceMap();
+              const el = document.getElementById('priceStatus');
+              if (el) el.textContent = `自動読込: ${priceMap.size}件`;
+            }
+          }
+        }
+      } catch (e) {
+        // サイレント失敗（file://起動やCORSで読めない場合は無視）
+      } finally {
+        updatePriceColumnsVisibility();
+      }
+    });
+
+    // 初回は空のまま
+  </script>
+</body>
+</html>
